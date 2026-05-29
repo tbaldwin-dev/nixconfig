@@ -1,30 +1,61 @@
-{
-  self,
-  inputs,
-  ...
-}:
+{ self, inputs, ... }:
+let
+  sessionVariables = {
+    # Add platform hints for electorn apps
+    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+  };
+  niriPkgs = pkgs: [
+    # Add a clipboard provider
+    pkgs.wl-clipboard
+  ];
+in
 {
   flake.nixosModules.niri =
     { pkgs, ... }:
     {
+      # Enable the NixOS niri module
       programs.niri = {
         enable = true;
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.niri;
         useNautilus = false;
       };
 
-      # Enable upower for niri
-      services.upower.enable = true;
+      environment = {
+        inherit sessionVariables;
+        systemPackages = niriPkgs pkgs;
+      };
     };
 
   flake.homeModules.niri =
-    { pkgs, lib, osConfig, ... }:
+    { pkgs, config, ... }:
     {
-      home.packages = lib.mkIf (!osConfig.programs.niri.enable) [
-        self.packages.${pkgs.stdenv.hostPlatform.system}.niri
-      ];
-      home.sessionVariables = {
-        ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+      home = {
+        inherit sessionVariables;
+        packages = [
+          # Add niri to the path
+          self.packages.${pkgs.stdenv.hostPlatform.system}.niri
+        ]
+        ++ niriPkgs pkgs;
+      };
+
+      # Configure XDG portals to use the GTK implementation
+      systemd.user.packages = [
+        pkgs.xdg-desktop-portal
+      ]
+      ++ config.xdg.portal.extraPortals;
+      xdg.portal = {
+        enable = true;
+        extraPortals = [
+          pkgs.xdg-desktop-portal-gtk
+        ];
+        config = {
+          common.default = [
+            "gtk"
+          ];
+          niri = {
+            "org.freedesktop.impl.portal.FileChooser" = "gtk";
+          };
+        };
       };
     };
 
