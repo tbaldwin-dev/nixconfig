@@ -38,57 +38,49 @@
           ...
         }:
         let
-          users = lib.attrNames self.lib.users;
+          users = ["tbaldwin"];
           systems = lib.systems.flakeExposed;
         in
         {
+          inherit systems;
+
           # Import home manager into the module system
           # Import all flake-parts modules from the modules directory
           imports = [
             inputs.home-manager.flakeModules.home-manager
+            inputs.wrapper-modules.flakeModules.wrappers
             (inputs.import-tree ./modules)
           ];
 
-          # Allow flake.lib to be mergable
-          options.flake.lib = lib.mkOption {
-            type = lib.types.lazyAttrsOf lib.types.anything;
-            default = { };
-          };
+          # Dynamically compute all of the homeConfigurations
+          # This build a configuration for each system for every user
+          flake.homeConfigurations = lib.listToAttrs (
+            lib.concatMap (
+              system:
+              map (user: {
+                name = "${user}@${system}";
+                value = withSystem system (
+                  { pkgs, ... }:
+                  inputs.home-manager.lib.homeManagerConfiguration {
+                    inherit pkgs;
+                    modules = [ self.homeModules.${user} ];
+                  }
+                );
+              }) users
+            ) systems
+          );
 
-          # Use config because of the options above
-          config = {
-            inherit systems;
-
-            # Dynamically compute all of the homeConfigurations
-            # This build a configuration for each system for every user
-            flake.homeConfigurations = lib.listToAttrs (
-              lib.concatMap (
-                system:
-                map (user: {
-                  name = "${user}@${system}";
-                  value = withSystem system (
-                    { pkgs, ... }:
-                    inputs.home-manager.lib.homeManagerConfiguration {
-                      inherit pkgs;
-                      modules = [ self.homeModules.${user} ];
-                    }
-                  );
-                }) users
-              ) systems
-            );
-
-            # Setup nixpkgs that will be used by every module
-            perSystem =
-              { system, ... }:
-              {
-                _module.args.pkgs = import inputs.nixpkgs {
-                  inherit system;
-                  config = {
-                    allowUnfree = true;
-                  };
+          # Setup nixpkgs that will be used by every module
+          perSystem =
+            { system, ... }:
+            {
+              _module.args.pkgs = import inputs.nixpkgs {
+                inherit system;
+                config = {
+                  allowUnfree = true;
                 };
               };
-          };
+            };
         }
       );
 }

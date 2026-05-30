@@ -5,11 +5,12 @@
 }:
 {
   flake.nixosModules.tbaldwin =
-    { config, ... }:
+    { config, pkgs, ... }:
     {
       users.users.tbaldwin = {
         isNormalUser = true;
         initialPassword = "password";
+        shell = pkgs.zsh;
         extraGroups = [
           "wheel"
         ]
@@ -22,6 +23,9 @@
 
       # Enable wireshark
       programs.wireshark.enable = true;
+
+      # Enable zsh
+      programs.zsh.enable = true;
     };
 
   flake.homeModules.tbaldwin =
@@ -69,6 +73,13 @@
       home.sessionVariables = {
         _JAVA_AWT_WM_NONREPARENTING = 1;
         GHIDRA_INSTALL_DIR = "${pkgs.ghidra}/lib/ghidra/";
+      };
+
+      # Configure git module
+      Git = {
+        enable = true;
+        name = "Trent Baldwin";
+        email = "trent.baldwin@proton.me";
       };
 
       # Let Home Manager install and manage itself.
