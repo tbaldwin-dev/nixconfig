@@ -1,8 +1,16 @@
-{ inputs, ... }:
+{ ... }:
 {
+  flake.nixosModules.zsh =
+    { ... }:
+    {
+      # Enable zsh
+      programs.zsh.enable = true;
+    };
+
   flake.homeModules.zsh =
     { pkgs, ... }:
     {
+      programs.starship.enable = true;
       programs.zsh = {
         enable = true;
         oh-my-zsh = {
@@ -35,7 +43,7 @@
         plugins = [
           {
             name = "zsh-helix-mode";
-            src = inputs.zsh-helix-mode.packages.${pkgs.stdenv.system}.zsh-helix-mode;
+            src = pkgs.zsh-helix-mode;
             file = "share/zsh-helix-mode/zsh-helix-mode.plugin.zsh";
           }
         ];

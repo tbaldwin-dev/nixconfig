@@ -1,4 +1,4 @@
-{ self,  ... }:
+{ self, ... }:
 let
   sessionVariables = {
     # Add platform hints for electorn apps
@@ -20,6 +20,11 @@ in
         useNautilus = false;
       };
 
+      # Enable display manager
+      services.displayManager.gdm = {
+        enable = true;
+      };
+
       environment = {
         inherit sessionVariables;
         systemPackages = niriPkgs pkgs;
@@ -36,6 +41,16 @@ in
           self.packages.${pkgs.stdenv.hostPlatform.system}.niri
         ]
         ++ niriPkgs pkgs;
+
+        # Set the pointer cursor for Xorg apps
+        pointerCursor = {
+          enable = true;
+          package = pkgs.adwaita-icon-theme;
+          size = 24;
+          name = "Adwaita";
+          gtk.enable = true;
+          x11.enable = true;
+        };
       };
 
       # Configure XDG portals to use the GTK implementation
@@ -68,6 +83,9 @@ in
     }:
     {
       imports = [ wlib.wrapperModules.niri ];
+      runtimePkgs = [
+        pkgs.adwaita-icon-theme
+      ];
       settings =
         let
           noctaliaExe = lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.noctalia-shell;
@@ -184,6 +202,11 @@ in
               width = 2;
               active-color = "#${self.lib.themeNoHash.base09}";
             };
+          };
+
+          cursor = {
+            xcursor-theme = "Adwaita";
+            xcursor-size = 24;
           };
 
           workspaces =

@@ -17,9 +17,14 @@
     pwndbg = {
       url = "github:pwndbg/pwndbg";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.uv2nix.follows = "uv2nix";
     };
     wrapper-modules = {
       url = "github:BirdeeHub/nix-wrapper-modules";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -38,7 +43,7 @@
           ...
         }:
         let
-          users = ["tbaldwin"];
+          users = [ "tbaldwin" ];
           systems = lib.systems.flakeExposed;
         in
         {
@@ -79,6 +84,12 @@
                 config = {
                   allowUnfree = true;
                 };
+                overlays = [
+                  (final: prev: {
+                    pwndbg = inputs.pwndbg.packages.${prev.stdenv.hostPlatform.system}.pwndbg;
+                    zsh-helix-mode = inputs.zsh-helix-mode.packages.${prev.stdenv.hostPlatform.system}.zsh-helix-mode;
+                  })
+                ];
               };
             };
         }

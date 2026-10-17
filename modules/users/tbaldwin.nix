@@ -1,12 +1,16 @@
 {
   self,
-  inputs,
   ...
 }:
 {
   flake.nixosModules.tbaldwin =
     { config, pkgs, ... }:
     {
+      imports = [
+        self.nixosModules.niri        
+        self.nixosModules.zsh
+      ];
+
       users.users.tbaldwin = {
         isNormalUser = true;
         initialPassword = "password";
@@ -17,21 +21,11 @@
         ++ (if config.networking.networkmanager.enable then [ "networkmanager" ] else [ ])
         ++ (if config.programs.wireshark.enable then [ "wireshark" ] else [ ]);
       };
-
-      # Enable steam
-      programs.steam.enable = true;
-
-      # Enable wireshark
-      programs.wireshark.enable = true;
-
-      # Enable zsh
-      programs.zsh.enable = true;
     };
 
   flake.homeModules.tbaldwin =
-    { pkgs, ... }:
+    { config, pkgs, ... }:
     {
-      # Use these features for this configuration
       imports = [
         self.homeModules.niri
         self.homeModules.helix
@@ -42,64 +36,22 @@
 
       home.username = "tbaldwin";
       home.homeDirectory = "/home/tbaldwin";
-      home.stateVersion = "25.11";
+      home.stateVersion = "26.05";
 
-      home.packages = [
+      home.packages = with pkgs; [
         # Nix tools
-        pkgs.nix-tree
+        nix-tree
 
-        # RE Tools
-        pkgs.ghidra
-        pkgs.biodiff
-        inputs.pwndbg.packages.${pkgs.stdenv.system}.pwndbg
+        # Messaging Clients
+        simplex-chat-desktop
+        signal-desktop
 
-        # Repo management
-        pkgs.just
-        pkgs.pre-commit
-
-        # Linting Tools
-        pkgs.ruff
-        pkgs.pyright
-        pkgs.clang-tools
-        pkgs.buf
-
-        # Other packages
-        pkgs.witr
-        pkgs.simplex-chat-desktop
-        pkgs.signal-desktop
-        pkgs.localsend
+        # General Utilities
+        witr
+        localsend
       ];
 
-      home.sessionVariables = {
-        _JAVA_AWT_WM_NONREPARENTING = 1;
-        GHIDRA_INSTALL_DIR = "${pkgs.ghidra}/lib/ghidra/";
-      };
-
-      # Configure git module
-      Git = {
-        enable = true;
-        name = "Trent Baldwin";
-        email = "trent.baldwin@proton.me";
-      };
-
-      # Let Home Manager install and manage itself.
-      programs.home-manager.enable = true;
-
-      programs.bash.enable = true;
-
-      programs.starship.enable = true;
-
-      programs.direnv = {
-        enable = true;
-        silent = true;
-      };
-
-      programs.lazydocker.enable = true;
-
-      programs.lazysql.enable = true;
-
-      programs.java.enable = true;
-
+      # Enable basic system monitoring
       programs.btop = {
         enable = true;
         package = pkgs.btop-cuda;
