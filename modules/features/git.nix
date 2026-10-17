@@ -23,6 +23,8 @@
           );
           commit.gpgsign = true;
           tag.gpgSign = true;
+          rebase.updateRefs = true;
+          rerere.enabled = true;
           column.ui = "auto";
           branch.sort = "committerdate";
         };
