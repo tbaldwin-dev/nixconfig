@@ -22,7 +22,7 @@
   );
 
   flake.homeModules.desktop =
-    { ... }:
+    { pkgs, ... }:
     {
       # Use these features for this configuration
       imports = [
@@ -33,10 +33,18 @@
         self.homeModules.reverseEngineering
         self.homeModules.gaming
       ];
+
+      nixconfig.niri.package = self.packages.${pkgs.stdenv.hostPlatform.system}.niri.wrap {
+        settings.outputs = {
+          "DP-1".mode = "2560x1440@165.000";
+        };
+      };
+
+      services.tailscale-systray.enable = true;
     };
 
   flake.nixosModules.desktop =
-    { pkgs, lib, ... }:
+    { ... }:
     {
       imports = [
         self.nixosModules.desktop_hardware
@@ -84,13 +92,7 @@
         "flakes"
       ];
 
-      programs.niri.package = lib.mkForce (
-        self.packages.${pkgs.stdenv.hostPlatform.system}.niri.wrap {
-          settings.outputs = {
-            "DP-1".mode = "2560x1440@165.000";
-          };
-        }
-      );
+      services.displayManager.defaultSession = "niri";
 
       services.udev.extraRules = ''
         # 8BitDo Ultimate Bluetooth Controller's boot HID interface (seems to be shared by multiple 8BitDo devices)

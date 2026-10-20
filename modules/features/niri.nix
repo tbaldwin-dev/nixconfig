@@ -1,74 +1,92 @@
 { self, ... }:
-let
-  sessionVariables = {
-    # Add platform hints for electorn apps
-    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
-  };
-  niriPkgs = pkgs: [
-    # Add a clipboard provider
-    pkgs.wl-clipboard
-  ];
-in
 {
   flake.nixosModules.niri =
     { pkgs, ... }:
     {
-      # Enable the NixOS niri module
-      programs.niri = {
-        enable = true;
-        package = self.packages.${pkgs.stdenv.hostPlatform.system}.niri;
-        useNautilus = false;
-      };
+      # Link xdg-desktop paths managed by home-manager
+      environment.pathsToLink = [
+        "/share/applications"
+        "/share/xdg-desktop-portal"
+      ];
 
-      # Enable display manager
-      services.displayManager.gdm = {
-        enable = true;
-      };
-
-      environment = {
-        inherit sessionVariables;
-        systemPackages = niriPkgs pkgs;
+      # Enable display manager and add niri to options
+      services.displayManager = {
+        gdm.enable = true;
+        sessionPackages = [
+          # Hack to add in the desktop file to XDG_DATA_DIRS
+          pkgs.niri
+        ];
       };
     };
 
   flake.homeModules.niri =
-    { pkgs, config, ... }:
     {
-      home = {
-        inherit sessionVariables;
-        packages = [
-          # Add niri to the path
-          self.packages.${pkgs.stdenv.hostPlatform.system}.niri
-        ]
-        ++ niriPkgs pkgs;
-
-        # Set the pointer cursor for Xorg apps
-        pointerCursor = {
-          enable = true;
-          package = pkgs.adwaita-icon-theme;
-          size = 24;
-          name = "Adwaita";
-          gtk.enable = true;
-          x11.enable = true;
-        };
+      pkgs,
+      config,
+      lib,
+      ...
+    }:
+    {
+      options.nixconfig.niri.package = lib.mkOption {
+        type = lib.types.package;
+        default = self.packages.${pkgs.stdenv.hostPlatform.system}.niri;
       };
+      config = {
+        home = {
+          sessionVariables = {
+            # Add platform hints for electorn apps
+            ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+          };
 
-      # Configure XDG portals to use the GTK implementation
-      systemd.user.packages = [
-        pkgs.xdg-desktop-portal
-      ]
-      ++ config.xdg.portal.extraPortals;
-      xdg.portal = {
-        enable = true;
-        extraPortals = [
-          pkgs.xdg-desktop-portal-gtk
-        ];
-        config = {
-          common.default = [
-            "gtk"
+          packages = with pkgs; [
+            config.nixconfig.niri.package
+            # Add a file picker
+            pkgs.nautilus
+            # Add a clipboard provider
+            wl-clipboard
           ];
-          niri = {
-            "org.freedesktop.impl.portal.FileChooser" = "gtk";
+
+          # Set the pointer cursor for Xorg apps
+          pointerCursor = {
+            enable = true;
+            package = pkgs.adwaita-icon-theme;
+            size = 24;
+            name = "Adwaita";
+            gtk.enable = true;
+            x11.enable = true;
+          };
+        };
+
+        dbus.packages = [
+          pkgs.nautilus
+        ];
+
+        services.gnome-keyring.enable = true;
+
+        # Configure XDG portals to use the GTK implementation
+        systemd.user.packages = [
+          pkgs.xdg-desktop-portal
+        ]
+        ++ config.xdg.portal.extraPortals;
+        xdg.portal = {
+          enable = true;
+          extraPortals = [
+            pkgs.xdg-desktop-portal-gnome
+            pkgs.xdg-desktop-portal-gtk
+          ];
+          config = {
+            common.default = [
+              "gtk"
+            ];
+            niri = {
+              default = [
+                "gnome"
+                "gtk"
+              ];
+              "org.freedesktop.impl.portal.Access" = "gtk";
+              "org.freedesktop.impl.portal.Notification" = "gtk";
+              "org.freedesktop.impl.portal.Secret" = "gnome-keyring";
+            };
           };
         };
       };
