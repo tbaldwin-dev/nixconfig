@@ -7,7 +7,7 @@
     { config, pkgs, ... }:
     {
       imports = [
-        self.nixosModules.niri        
+        self.nixosModules.niri
         self.nixosModules.zsh
       ];
 
@@ -19,12 +19,13 @@
           "wheel"
         ]
         ++ (if config.networking.networkmanager.enable then [ "networkmanager" ] else [ ])
-        ++ (if config.programs.wireshark.enable then [ "wireshark" ] else [ ]);
+        ++ (if config.programs.wireshark.enable then [ "wireshark" ] else [ ])
+        ++ (if config.virtualisation.docker.enable then [ "docker" ] else [ ]);
       };
     };
 
   flake.homeModules.tbaldwin =
-    { config, pkgs, ... }:
+    { pkgs, ... }:
     {
       imports = [
         self.homeModules.niri
