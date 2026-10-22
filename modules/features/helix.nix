@@ -4,11 +4,11 @@
 }:
 {
   flake.homeModules.helix =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     {
       programs.helix = {
         enable = true;
-        package = self.packages.${pkgs.stdenv.hostPlatform.system}.helix;
+        package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.helix;
         defaultEditor = true;
       };
     };

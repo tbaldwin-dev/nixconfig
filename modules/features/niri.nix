@@ -65,6 +65,7 @@
 
         # Configure XDG portals to use the GTK implementation
         systemd.user.packages = [
+          config.nixconfig.niri.package
           pkgs.xdg-desktop-portal
         ]
         ++ config.xdg.portal.extraPortals;
